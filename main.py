@@ -18,8 +18,6 @@ ctk.set_default_color_theme("dark-blue")
  
 appWidth=1275
 appHeight=650
-
-num_of_acts=12
 errormessage="Click Blue Button to Generate Schedule"
 activity1="Soccer @ Complex"
 activity2="Movie @ Nook" # Double
@@ -33,25 +31,24 @@ activity9="Downball Tournament @ Garden" # Boys
 activity10="Bracelet Making @ Pavillion" # Girls
 activity11="Rainy Day Hike @ PA"
 activity12="Tennis @ Tennis Center"
-actnames=[activity1,activity2,activity3,activity4,activity5,activity6,activity7,activity8,activity9,activity10,activity11,activity12]
+activity_names=[activity1,activity2,activity3,activity4,activity5,activity6,activity7,activity8,activity9,activity10,activity11,activity12]
 
 class MyFrame(ctk.CTkScrollableFrame):
-    def __init__(self, master, **kwargs):
+    def __init__(self, master, actnames: list, **kwargs):
         super().__init__(master, **kwargs)
         #Initialize Checkboxes
-        self.checkboxVars = [ctk.StringVar(value="off") for i in range(num_of_acts)]
 
-        self.checkboxSpan = [ctk.StringVar(value="off") for i in range(num_of_acts)]
+        self.checkboxVars = [ctk.StringVar(value="off") for i in range(len(actnames))]
 
-        self.checkboxboy = [ctk.StringVar(value="on") for i in range(num_of_acts)]
+        self.checkboxSpan = [ctk.StringVar(value="off") for i in range(len(actnames))]
 
-        self.checkboxgirl = [ctk.StringVar(value="on") for i in range(num_of_acts)]
+        self.checkboxboy = [ctk.StringVar(value="on") for i in range(len(actnames))]
 
-        self.checkboxsimul= [ctk.StringVar(value="off") for i in range(num_of_acts)]
+        self.checkboxgirl = [ctk.StringVar(value="on") for i in range(len(actnames))]
 
-        
+        self.checkboxsimul= [ctk.StringVar(value="off") for i in range(len(actnames))]
 
-        self.choices = [ctk.CTkCheckBox(self, text=actnames[i], variable=self.checkboxVars[i], onvalue="on", offvalue="off") for i in range(num_of_acts)]
+        self.choices = [ctk.CTkCheckBox(self, text=actnames[i], variable=self.checkboxVars[i], onvalue="on", offvalue="off") for i in range(len(actnames))]
         for i in range(len(self.choices)):
             self.choices[i].grid(row=i, column=0, padx=20, pady=20, sticky="ew")
 
@@ -59,7 +56,7 @@ class MyFrame(ctk.CTkScrollableFrame):
         self.activity_buttons = []
         
         for i, actname in enumerate(actnames):
-            self.create_activity_widgets(actname, i)
+            self.change_activity_widgets(actname, i)
 
         for i in range(len(self.checkboxSpan)):
             self.checkboxSpan[i] = ctk.CTkCheckBox(self, text="Span Two Periods", variable=self.checkboxSpan[i], onvalue="on", offvalue="off")
@@ -77,10 +74,10 @@ class MyFrame(ctk.CTkScrollableFrame):
             self.checkboxboy[i] = ctk.CTkCheckBox(self, text="Boy's Side", variable=self.checkboxboy[i], onvalue="on", offvalue="off")
             self.checkboxboy[i].grid(row=i, column=6, padx=20, pady=20, sticky="ew")
 
-    def create_activity_widgets(self, placeholder_text, row):
+    def change_activity_widgets(self, placeholder_text, row):
         entry = ctk.CTkEntry(self, placeholder_text=placeholder_text)
         entry.grid(row=row, column=1, columnspan=1, padx=10, pady=10, sticky="ew")
-        
+
         def change_activity():
             self.choices[row].configure(text=entry.get())
         
@@ -100,6 +97,10 @@ class App(ctk.CTk):
 
         self.geometry(f"{appWidth}x{appHeight}")    
  
+        num_of_acts = 12 # Initial number of actvities!
+        self.my_frame = MyFrame(master=self, actnames=activity_names, width=1200, height=300)
+        self.my_frame.grid(row=2, column=0,columnspan=12, padx=20, pady=20)
+
 
         # Schedule Name/Title
         self.nameLabel = ctk.CTkLabel(self,
@@ -117,11 +118,13 @@ class App(ctk.CTk):
 
         #Alter Number of Activities
         def alternumacts():
-            tempvar=self.numberactsentry.get()
-            if(tempvar>=12):
-                num_of_acts=tempvar
-            elif(tempvar<12):
+            num_of_acts=int(self.numberactsentry.get())
+            if(num_of_acts>=12 and num_of_acts<20): # 20 is arbitrary right now
+                # Reinitialize the scroll!!
+                actnames = [self.my_frame.choices[i].cget("text") if i < len(self.my_frame.choices) else "FILLER" for i in range(num_of_acts)]
+            elif(num_of_acts<12):
                 # Tell the user that this number cannot be lower than 12!
+                num_of_acts = 12
                 print("Yo, not cool dude")
 
         self.numberacts = ctk.CTkLabel(self,
@@ -136,11 +139,6 @@ class App(ctk.CTk):
                             pady=10, sticky="ew")
         self.numberactsbutton=ctk.CTkButton(self,text="Change", corner_radius=32, fg_color="#0000FF",hover_color="#33BFFF",command=alternumacts)
         self.numberactsbutton.grid(row=0,column=9,columnspan=1,padx=15,pady=10,sticky="ew")        
-
-#Scrollable Frame?
-        self.my_frame = MyFrame(master=self, width=1200, height=300)
-        self.my_frame.grid(row=2, column=0,columnspan=12, padx=20, pady=20)
-    
          
         def testrun():
             self.nameLabel = ctk.CTkLabel(self,text="An Error Has Occured")
@@ -152,7 +150,7 @@ class App(ctk.CTk):
             
         def run(): #button press
             opts = [True if self.my_frame.checkboxVars[i].get() == "on" else False for i in range(num_of_acts)]
-            actnames=[activity1,activity2,activity3,activity4,activity5,activity6,activity7,activity8,activity9,activity10,activity11,activity12]
+            actnames=[self.my_frame.choices[i].cget("text") for i in range(len(self.my_frame.choices))]
             act_dict = []
             #Sort out the categories
             categs = ["All" if self.my_frame.checkboxboy[i].get() == self.my_frame.checkboxgirl[i].get() else "JustBoy" if self.my_frame.checkboxboy[i].get() == "on" else "JustGirl" for i in range(num_of_acts)]
