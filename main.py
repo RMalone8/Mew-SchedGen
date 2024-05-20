@@ -32,6 +32,8 @@ activity10="Bracelet Making @ Pavillion" # Girls
 activity11="Rainy Day Hike @ PA"
 activity12="Tennis @ Tennis Center"
 activity_names=[activity1,activity2,activity3,activity4,activity5,activity6,activity7,activity8,activity9,activity10,activity11,activity12]
+extra_act = ["N/A" for _ in range(18)]
+activity_names += extra_act
 
 class MyFrame(ctk.CTkScrollableFrame):
     def __init__(self, master, actnames: list, **kwargs):
@@ -97,7 +99,7 @@ class App(ctk.CTk):
 
         self.geometry(f"{appWidth}x{appHeight}")    
  
-        num_of_acts = 12 # Initial number of actvities!
+        self.num_of_acts = 12 # Initial number of actvities!
         self.my_frame = MyFrame(master=self, actnames=activity_names, width=1200, height=300)
         self.my_frame.grid(row=2, column=0,columnspan=12, padx=20, pady=20)
 
@@ -118,26 +120,28 @@ class App(ctk.CTk):
 
         #Alter Number of Activities
         def alternumacts():
-            num_of_acts=int(self.numberactsentry.get())
-            if(num_of_acts>=12 and num_of_acts<20): # 20 is arbitrary right now
-                # Reinitialize the scroll!!
-                actnames = [self.my_frame.choices[i].cget("text") if i < len(self.my_frame.choices) else "FILLER" for i in range(num_of_acts)]
-            elif(num_of_acts<12):
+            self.num_of_acts=int(self.numberactsentry.get())
+            if(int(self.numberactsentry.get())<12):
                 # Tell the user that this number cannot be lower than 12!
-                num_of_acts = 12
                 print("Yo, not cool dude")
+            elif(int(self.numberactsentry.get())>30):
+                print("Too high!")
+            else: 
+                self.num_of_acts = int(self.numberactsentry.get())
+                for i in range(self.num_of_acts):
+                    self.my_frame.checkboxVars[i].set("on")
 
         self.numberacts = ctk.CTkLabel(self,
-                                      text="Number of Activities")
+                                       text="The First Certain Number of Activities will be Selected")
         self.numberacts.grid(row=0, column=5,
-                            padx=5, pady=10,
-                            sticky="ew")
+                             padx=5, pady=10,
+                             sticky="ew")
         self.numberactsentry = ctk.CTkEntry(self,
-                         placeholder_text="Need at least 12")
+                         placeholder_text="Insert Number 12 or Greater")
         self.numberactsentry.grid(row=0, column=6,
                             columnspan=3, padx=5,
                             pady=10, sticky="ew")
-        self.numberactsbutton=ctk.CTkButton(self,text="Change", corner_radius=32, fg_color="#0000FF",hover_color="#33BFFF",command=alternumacts)
+        self.numberactsbutton=ctk.CTkButton(self,text="Select First 12", corner_radius=32, fg_color="#0000FF",hover_color="#33BFFF",command=alternumacts)
         self.numberactsbutton.grid(row=0,column=9,columnspan=1,padx=15,pady=10,sticky="ew")        
          
         def testrun():
@@ -149,15 +153,16 @@ class App(ctk.CTk):
                 self.my_frame.checkboxVars[i].set("on")
             
         def run(): #button press
-            opts = [True if self.my_frame.checkboxVars[i].get() == "on" else False for i in range(num_of_acts)]
+            opts = [True if self.my_frame.checkboxVars[i].get() == "on" else False for i in range(self.num_of_acts)]
             actnames=[self.my_frame.choices[i].cget("text") for i in range(len(self.my_frame.choices))]
+
             act_dict = []
             #Sort out the categories
-            categs = ["All" if self.my_frame.checkboxboy[i].get() == self.my_frame.checkboxgirl[i].get() else "JustBoy" if self.my_frame.checkboxboy[i].get() == "on" else "JustGirl" for i in range(num_of_acts)]
+            categs = ["All" if self.my_frame.checkboxboy[i].get() == self.my_frame.checkboxgirl[i].get() else "JustBoy" if self.my_frame.checkboxboy[i].get() == "on" else "JustGirl" for i in range(self.num_of_acts)]
             
-            categs = [categs[i]+"Simul" if self.my_frame.checkboxsimul[i].get() == "on" else categs[i] for i in range(num_of_acts)]
+            categs = [categs[i]+"Simul" if self.my_frame.checkboxsimul[i].get() == "on" else categs[i] for i in range(self.num_of_acts)]
 
-            categs = [categs[i]+"Double" if self.my_frame.checkboxSpan[i].get() == "on" else categs[i] for i in range(num_of_acts)]
+            categs = [categs[i]+"Double" if self.my_frame.checkboxSpan[i].get() == "on" else categs[i] for i in range(self.num_of_acts)]
 
             time_period = "morning" if self.checkboxmorning.get() == "on" else "afternoon" if self.checkboxafternoon.get() == "on" else "wholeday"
 
@@ -357,4 +362,4 @@ class App(ctk.CTk):
 if __name__ == "__main__":
     app = App()
     # Runs the app
-    app.mainloop()   
+    app.mainloop()
