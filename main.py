@@ -1,12 +1,14 @@
 import customtkinter as ctk
 from PIL import Image
-from openpyxl import load_workbook
+import openpyxl as pyxl
+from openpyxl import Workbook
 import random
 import shutil
 from pathlib import Path
 import numpy as np
 from datetime import datetime
 from template_create import template_generator
+import os
 
 # Sets the appearance mode of the application
 # "System" sets the appearance same as that of the system
@@ -18,37 +20,43 @@ ctk.set_default_color_theme("dark-blue")
  
 appWidth=1275
 appHeight=650
+
+activity_names = []
+
+if os.path.exists("past_activity_data.xlsx"):
+    print("Here")
+    data_book = pyxl.open("past_activity_data.xlsx")
+    data_sheet = data_book.active
+    for i in range(2, 2+data_sheet["A1"].value):
+        activity_names.append(data_sheet[f"A{i}"].value)
+    data_book.save("past_activity_data.xlsx")
+else:
+    data_book = Workbook()
+    data_sheet = data_book.active
+
 errormessage="Click Blue Button to Generate Schedule"
-activity1="Soccer @ Complex"
-activity2="Movie @ Nook" # Double
-activity3="Movie @ Video Theatre" # Double
-activity4="Activity Shuffle 1"
-activity5="Activity Shuffle 2"
-activity6="FF @ Complex"
-activity7="Games @ Dance Studio" # Girls
-activity8="Games @ Vault"
-activity9="Downball Tournament @ Garden" # Boys
-activity10="Bracelet Making @ Pavillion" # Girls
-activity11="Rainy Day Hike @ PA"
-activity12="Tennis @ Tennis Center"
-activity_names=[activity1,activity2,activity3,activity4,activity5,activity6,activity7,activity8,activity9,activity10,activity11,activity12]
-extra_act = ["N/A" for _ in range(18)]
+# activity_names=[activity1,activity2,activity3,activity4,activity5,activity6,activity7,activity8,activity9,activity10,activity11,activity12]
+extra_act = ["N/A" for _ in range(30 - len(activity_names))]
 activity_names += extra_act
+
+# Will be loaded in from data_sheet as well, but this is for testing
+previous_schedules = [[['FF @ Complex', 'Downball Tournament @ Garden', 'Games @ Vault', 'Movie @ Video Theatre', 'Games @ Dance Studio', 'Rainy Day Hike @ PA', 'Bracelet Making @ Pavillion', 'Tennis @ Tennis Center', 'Movie @ Nook', 'Activity Shuffle 2'], ['Games @ Vault', 'Movie @ Video Theatre', 'Tennis @ Tennis Center', 'Downball Tournament @ Garden', 'Soccer @ Complex', 'Games @ Dance Studio', 'Movie @ Nook', 'Activity Shuffle 1', 'FF @ Complex', 'Rainy Day Hike @ PA'], ['Rainy Day Hike @ PA', 'Movie @ Nook', 'Games @ Dance Studio', 'Bracelet Making @ Pavillion', 'Soccer @ Complex', 'FF @ Complex', 'Tennis @ Tennis Center', 'Activity Shuffle 2', 'Movie @ Video Theatre', 'Downball Tournament @ Garden'], ['Activity Shuffle 1', 'Tennis @ Tennis Center', 'Movie @ Nook', 'Games @ Dance Studio', 'Bracelet Making @ Pavillion', 'Activity Shuffle 2', 'Games @ Vault', 'Movie @ Video Theatre', 'Rainy Day Hike @ PA', 'FF @ Complex'], ['Games @ Dance Studio', 'Games @ Vault', 'Activity Shuffle 2', 'Activity Shuffle 1', 'Rainy Day Hike @ PA', 'Movie @ Nook', 'Movie @ Video Theatre', 'Downball Tournament @ Garden', 'Bracelet Making @ Pavillion', 'Tennis @ Tennis Center'], ['', '', '', 'Games @ Vault', 'FF @ Complex', '', '', '', 'Tennis @ Tennis Center', 'Movie @ Video Theatre'], ['Tennis @ Tennis Center', 'Games @ Dance Studio', 'FF @ Complex', 'Movie @ Nook', 'Downball Tournament @ Garden', 'Bracelet Making @ Pavillion', 'Activity Shuffle 2', 'Rainy Day Hike @ PA', 'Games @ Vault', 'Activity Shuffle 1']],
+                      [['Downball Tournament @ Garden', 'Activity Shuffle 1', 'Movie @ Video Theatre', 'Basketball @ The Spot', 'Games @ Vault', 'Activity Shuffle 2', 'Games @ Dance Studio', 'Movie @ Nook', 'FF @ Complex', 'Bracelet Making @ Pavillion'], ['Movie @ Video Theatre', 'Movie @ Nook', 'Activity Shuffle 1', 'Basketball @ The Spot', 'Bracelet Making @ Pavillion', 'Games @ Dance Studio', 'FF @ Complex', 'Tennis @ Tennis Center', 'Soccer @ Complex', 'Games @ Vault'], ['Games @ Dance Studio', 'Soccer @ Complex', 'Activity Shuffle 2', 'FF @ Complex', 'Movie @ Nook', 'Bracelet Making @ Pavillion', 'Downball Tournament @ Garden', 'Movie @ Video Theatre', 'Rainy Day Hike @ PA', 'Activity Shuffle 1'], ['Movie @ Nook', 'Activity Shuffle 2', 'Tennis @ Tennis Center', 'Bracelet Making @ Pavillion', 'Activity Shuffle 1', 'Downball Tournament @ Garden', 'Rainy Day Hike @ PA', 'Games @ Dance Studio', 'Movie @ Video Theatre', 'FF @ Complex'], ['Rainy Day Hike @ PA', 'Games @ Vault', 'Bracelet Making @ Pavillion', 'Movie @ Nook', 'Soccer @ Complex', 'FF @ Complex', 'Movie @ Video Theatre', 'Downball Tournament @ Garden', 'Activity Shuffle 2', 'Games @ Dance Studio'], ['', '', '', 'Rainy Day Hike @ PA', 'Downball Tournament @ Garden', '', '', '', 'Bracelet Making @ Pavillion', 'Tennis @ Tennis Center'], ['FF @ Complex', 'Rainy Day Hike @ PA', 'Soccer @ Complex', 'Activity Shuffle 2', 'Tennis @ Tennis Center', 'Movie @ Nook', 'Activity Shuffle 1', 'Bracelet Making @ Pavillion', 'Games @ Dance Studio', 'Movie @ Video Theatre']]]
 
 class MyFrame(ctk.CTkScrollableFrame):
     def __init__(self, master, actnames: list, **kwargs):
         super().__init__(master, **kwargs)
         #Initialize Checkboxes
 
-        self.checkboxVars = [ctk.StringVar(value="off") for i in range(len(actnames))]
+        self.checkboxVars = [ctk.StringVar(value="off") for _ in range(len(actnames))]
 
-        self.checkboxSpan = [ctk.StringVar(value="off") for i in range(len(actnames))]
+        self.checkboxSpan = [ctk.StringVar(value="off") for _ in range(len(actnames))]
 
-        self.checkboxboy = [ctk.StringVar(value="on") for i in range(len(actnames))]
+        self.checkboxboy = [ctk.StringVar(value="on") for _ in range(len(actnames))]
 
-        self.checkboxgirl = [ctk.StringVar(value="on") for i in range(len(actnames))]
+        self.checkboxgirl = [ctk.StringVar(value="on") for _ in range(len(actnames))]
 
-        self.checkboxsimul= [ctk.StringVar(value="off") for i in range(len(actnames))]
+        self.checkboxsimul= [ctk.StringVar(value="off") for _ in range(len(actnames))]
 
         self.choices = [ctk.CTkCheckBox(self, text=actnames[i], variable=self.checkboxVars[i], onvalue="on", offvalue="off") for i in range(len(actnames))]
         for i in range(len(self.choices)):
@@ -89,6 +97,16 @@ class MyFrame(ctk.CTkScrollableFrame):
         self.activity_entries.append(entry)
         self.activity_buttons.append(button)
 
+class Memory(ctk.CTkScrollableFrame):
+    def __init__(self, master: list, **kwargs):
+        super().__init__(master, **kwargs)
+
+        def save_previous_schedule():
+            temp=1
+            self.save_schedule_button=ctk.CTkButton(self,text="Save Schedule", corner_radius=32, fg_color="#0000FF",hover_color="#33BFFF",command=save_previous_schedule)
+            self.save_schedule_button.grid(row=0,column=0,columnspan=1,padx=10,pady=10,sticky="ew")
+
+
 # Create App class
 class App(ctk.CTk):
 # Layout of the GUI will be written in the init itself
@@ -100,8 +118,12 @@ class App(ctk.CTk):
         self.geometry(f"{appWidth}x{appHeight}")    
  
         self.num_of_acts = 12 # Initial number of actvities!
+
         self.my_frame = MyFrame(master=self, actnames=activity_names, width=1200, height=300)
         self.my_frame.grid(row=2, column=0,columnspan=12, padx=20, pady=20)
+
+        #self.memory=Memory(master=self, width=200, height=200)
+        #self.memory.grid(row=7, column=8, columnspan=12, padx=20, pady=20)
 
 
         # Schedule Name/Title
@@ -132,29 +154,38 @@ class App(ctk.CTk):
                     self.my_frame.checkboxVars[i].set("on")
 
         self.numberacts = ctk.CTkLabel(self,
-                                       text="The First Certain Number of Activities will be Selected")
+                                       text="Number of Activities")
         self.numberacts.grid(row=0, column=5,
                              padx=5, pady=10,
                              sticky="ew")
         self.numberactsentry = ctk.CTkEntry(self,
-                         placeholder_text="Insert Number 12 or Greater")
+                         placeholder_text="Minimum of 12")
         self.numberactsentry.grid(row=0, column=6,
-                            columnspan=3, padx=5,
+                            columnspan=1, padx=5,
                             pady=10, sticky="ew")
-        self.numberactsbutton=ctk.CTkButton(self,text="Select First 12", corner_radius=32, fg_color="#0000FF",hover_color="#33BFFF",command=alternumacts)
-        self.numberactsbutton.grid(row=0,column=9,columnspan=1,padx=15,pady=10,sticky="ew")        
+        self.numberactsbutton=ctk.CTkButton(self,text="Select", corner_radius=32, fg_color="#0000FF",hover_color="#33BFFF",command=alternumacts)
+        self.numberactsbutton.grid(row=0,column=7,columnspan=1,padx=15,pady=10,sticky="ew")        
          
         def testrun():
             self.nameLabel = ctk.CTkLabel(self,text="An Error Has Occured")
             self.nameLabel.grid(row=14, column=0,padx=10, pady=10,sticky="ew")
         
-        def selectall():
+        def deselectall():
             for i in range(len(self.my_frame.choices)):
-                self.my_frame.checkboxVars[i].set("on")
+                self.my_frame.checkboxVars[i].set("off")
             
         def run(): #button press
+
             opts = [True if self.my_frame.checkboxVars[i].get() == "on" else False for i in range(self.num_of_acts)]
             actnames=[self.my_frame.choices[i].cget("text") for i in range(len(self.my_frame.choices))]
+
+            # Making sure to save all of the activities:
+            data_sheet.delete_cols(1,1)
+            data_sheet["A1"].value = self.num_of_acts
+            for i in range(2, self.num_of_acts + 2):
+                data_sheet[f"A{i}"].value = actnames[i]
+            data_book.save("past_activity_data.xlsx")
+
 
             act_dict = []
             #Sort out the categories
@@ -190,6 +221,11 @@ class App(ctk.CTk):
                 while not result and count < 100:
                     result = generateSchedule(b_groups= b_groups, g_groups= g_groups, activities= activities, sheet_specs=sheet_specs)
                     count +=1
+
+                # Sending Produced Schedule to Downloads
+                output_path=Path.home()/'Downloads'/f'Generated_Schedule_{datetime.now().month}_{datetime.now().day}_{datetime.now().year}.xlsx'
+                shutil.copyfile('new_sheet.xlsx',output_path)
+                print(f"Here is how similar it is to previous schedules (140 meaning identical): {compareAgainstPrevious(proposed_sched=result, previous_scheds=previous_schedules)}")
                 return result
 
             def generateSchedule(b_groups: int, g_groups: int, activities: list, sheet_specs: dict):
@@ -231,10 +267,8 @@ class App(ctk.CTk):
                                 break
 
                 # Sending the finished schedule...
-                sheet["A1"].value = self.nameEntry.get() 
-                book.save('new_sheet.xlsx')
-                output_path=Path.home()/'Downloads'/f'Generated_Schedule_{datetime.now().month}_{datetime.now().day}_{datetime.now().year}.xlsx'
-                shutil.copyfile('new_sheet.xlsx',output_path) 
+                sheet["A1"].value = self.nameEntry.get()
+                book.save('new_sheet.xlsx') 
                 return schedule
 
             def chooseValidActivity(group: int, period: int, groups: int, periods: int, activities: list) -> str:
@@ -288,10 +322,29 @@ class App(ctk.CTk):
                     override_coords.append({"coords": [period+1, group]})
                 return new_act
             
+            def compareAgainstPrevious(proposed_sched: list, previous_scheds: list):
+                # Currently only works for whole day schedules.
+                same_acts = 0
+                same_times = 0
+                total_score = 0
+
+                proposed = np.array(proposed_sched).transpose()
+
+                for previous in previous_scheds:
+                    for new_row, old_row,  in zip(proposed, np.array(previous).transpose()):
+                        new_row = [act.replace(" ", "") for act in new_row] # Stripped all spaces in case of random mistakes space-wise
+                        old_row = [act.replace(" ", "") for act in old_row]
+                        same_times = sum([2 for new_act, old_act in zip(new_row, old_row) if new_act == old_act])
+                        same_acts = sum([1 for old_act in old_row if old_act in new_row])
+                    total_score = same_times + same_acts if same_acts + same_times > total_score else total_score
+
+
+                return total_score
+
+
             schedy = getSchedule(b_groups=5, g_groups=5, activities=act_dict, sheet_specs=specs)
             print(schedy)
             
-
 
         # Functions to maintain one enabled timeframe checkbox
         def reset_checkboxes_morn():
@@ -318,7 +371,7 @@ class App(ctk.CTk):
                             onvalue="on",
                             offvalue="off",
                             command=reset_checkboxes_morn)                               
-        self.choicemorning.grid(row=7, column=3,
+        self.choicemorning.grid(row=7, column=4,
                           padx=5, pady=5,
                           sticky="ew")
         
@@ -328,7 +381,7 @@ class App(ctk.CTk):
                             onvalue="on",
                             offvalue="off",
                             command=reset_checkboxes_afternoon)                             
-        self.choiceafternoon.grid(row=7, column=4,
+        self.choiceafternoon.grid(row=7, column=5,
                           padx=5, pady=5,
                           sticky="ew")
 
@@ -338,26 +391,34 @@ class App(ctk.CTk):
                             onvalue="on",
                             offvalue="off",
                             command=reset_checkboxes_wholeday)                               
-        self.choicewholeday.grid(row=7, column=5,
+        self.choicewholeday.grid(row=7, column=6,
                           padx=5, pady=5,
                           sticky="ew")
 
 
         #Make Spreadsheet Button
-        self.testButton=ctk.CTkButton(self,text="Select All Activities", text_color="#000000", corner_radius=32, fg_color="#FFFFFF",hover_color="#FFFFFF",command=selectall)
-        self.testButton.grid(row=1,column=3,columnspan=3,padx=10,pady=10,sticky="ew")
+        self.testButton=ctk.CTkButton(self,text="Deselect All Activities", text_color="#000000", corner_radius=32, fg_color="#FFFFFF",hover_color="#FFFFFF",command=deselectall)
+        self.testButton.grid(row=1,column=4,columnspan=3,padx=10,pady=10,sticky="ew")
+
+        self.saveButton=ctk.CTkButton(self,text="Save Previous", text_color="#000000", corner_radius=32, fg_color="#77DD77",hover_color="#B9FEB9",command=deselectall)
+        self.saveButton.grid(row=1,column=3,columnspan=1,padx=5,pady=5,sticky="ew")
+
+        self.eraseButton=ctk.CTkButton(self,text="Erase Memory", text_color="#000000", corner_radius=32, fg_color="#FF6961",hover_color="#f69697",command=deselectall)
+        self.eraseButton.grid(row=1,column=7,columnspan=1,padx=5,pady=5,sticky="ew")
 
         self.testButton=ctk.CTkButton(self,text="Select Duration of Schedule", text_color="#000000", corner_radius=32, fg_color="#FFFFFF",hover_color="#FFFFFF",command=testrun)
-        self.testButton.grid(row=6,column=3,columnspan=3,padx=10,pady=10,sticky="ew")
+        self.testButton.grid(row=6,column=4,columnspan=3,padx=10,pady=10,sticky="ew")
 
         self.generateResultsButton=ctk.CTkButton(self,text="Generate Schedule", corner_radius=32, fg_color="#0000FF",hover_color="#33BFFF",command=run)
-        self.generateResultsButton.grid(row=8,column=3,columnspan=3,padx=10,pady=10,sticky="ew")
+        self.generateResultsButton.grid(row=8,column=4,columnspan=3,padx=10,pady=10,sticky="ew")
 
         self.testButton=ctk.CTkButton(self,text=errormessage, text_color="#000000", corner_radius=32, fg_color="#FFFFFF",hover_color="#FFFFFF",command=testrun)
-        self.testButton.grid(row=9,column=3,columnspan=3,padx=10,pady=10,sticky="ew")
+        self.testButton.grid(row=9,column=4,columnspan=3,padx=10,pady=10,sticky="ew")
       
-
-
+        #my_image=ctk.CTkImage(Image.open('images/CampIHCLogo2.png'),size=(150,150))
+        #my_image_label=ctk.CTkLabel(self, image=my_image, width=200, height=200)
+        #my_image_label.grid(row=7,column=9,columnspan=1,padx=10,pady=10,sticky="ew")
+        #my_image_label.grid_propagate(False)
 
 if __name__ == "__main__":
     app = App()
