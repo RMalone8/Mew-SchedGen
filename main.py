@@ -2,6 +2,7 @@ import customtkinter as ctk
 from PIL import Image
 import openpyxl as pyxl
 from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
 import random
 import shutil
 from pathlib import Path
@@ -21,25 +22,32 @@ ctk.set_default_color_theme("dark-blue")
 appWidth=1275
 appHeight=650
 
+save_file_name = "past_activity_data.xlsx"
 activity_names = []
+activity_categs = []
+previous_schedules = []
 
-if os.path.exists("past_activity_data.xlsx"):
-    print("Here")
-    data_book = pyxl.open("past_activity_data.xlsx")
+if os.path.exists(save_file_name):
+    data_book = pyxl.open(save_file_name)
     data_sheet = data_book.active
     for i in range(2, 2+data_sheet["A1"].value):
-        activity_names.append(data_sheet[f"A{i}"].value)
-    data_book.save("past_activity_data.xlsx")
+        activity_names.append(data_sheet[f"A{i}"].value.split("/")[0])
+        activity_categs.append(data_sheet[f"A{i}"].value.split("/")[1])
+    for i in range(2, 2+data_sheet["B1"].value):
+        previous_schedules.append(data_sheet[f"B{i}"].value)
 else:
     data_book = Workbook()
     data_sheet = data_book.active
+    data_sheet["A1"].value = 0
+    data_sheet["B1"].value = 0
+    data_book.save(save_file_name)
 
 errormessage="Click Blue Button to Generate Schedule"
-# activity_names=[activity1,activity2,activity3,activity4,activity5,activity6,activity7,activity8,activity9,activity10,activity11,activity12]
-extra_act = ["N/A" for _ in range(30 - len(activity_names))]
+extra_act = ["NA" for _ in range(30 - len(activity_names))]
+extra_categs = ["NA" for _ in range(30 - len(activity_names))]
 activity_names += extra_act
+activity_categs += extra_categs
 
-# Will be loaded in from data_sheet as well, but this is for testing
 previous_schedules = [[['FF @ Complex', 'Downball Tournament @ Garden', 'Games @ Vault', 'Movie @ Video Theatre', 'Games @ Dance Studio', 'Rainy Day Hike @ PA', 'Bracelet Making @ Pavillion', 'Tennis @ Tennis Center', 'Movie @ Nook', 'Activity Shuffle 2'], ['Games @ Vault', 'Movie @ Video Theatre', 'Tennis @ Tennis Center', 'Downball Tournament @ Garden', 'Soccer @ Complex', 'Games @ Dance Studio', 'Movie @ Nook', 'Activity Shuffle 1', 'FF @ Complex', 'Rainy Day Hike @ PA'], ['Rainy Day Hike @ PA', 'Movie @ Nook', 'Games @ Dance Studio', 'Bracelet Making @ Pavillion', 'Soccer @ Complex', 'FF @ Complex', 'Tennis @ Tennis Center', 'Activity Shuffle 2', 'Movie @ Video Theatre', 'Downball Tournament @ Garden'], ['Activity Shuffle 1', 'Tennis @ Tennis Center', 'Movie @ Nook', 'Games @ Dance Studio', 'Bracelet Making @ Pavillion', 'Activity Shuffle 2', 'Games @ Vault', 'Movie @ Video Theatre', 'Rainy Day Hike @ PA', 'FF @ Complex'], ['Games @ Dance Studio', 'Games @ Vault', 'Activity Shuffle 2', 'Activity Shuffle 1', 'Rainy Day Hike @ PA', 'Movie @ Nook', 'Movie @ Video Theatre', 'Downball Tournament @ Garden', 'Bracelet Making @ Pavillion', 'Tennis @ Tennis Center'], ['', '', '', 'Games @ Vault', 'FF @ Complex', '', '', '', 'Tennis @ Tennis Center', 'Movie @ Video Theatre'], ['Tennis @ Tennis Center', 'Games @ Dance Studio', 'FF @ Complex', 'Movie @ Nook', 'Downball Tournament @ Garden', 'Bracelet Making @ Pavillion', 'Activity Shuffle 2', 'Rainy Day Hike @ PA', 'Games @ Vault', 'Activity Shuffle 1']],
                       [['Downball Tournament @ Garden', 'Activity Shuffle 1', 'Movie @ Video Theatre', 'Basketball @ The Spot', 'Games @ Vault', 'Activity Shuffle 2', 'Games @ Dance Studio', 'Movie @ Nook', 'FF @ Complex', 'Bracelet Making @ Pavillion'], ['Movie @ Video Theatre', 'Movie @ Nook', 'Activity Shuffle 1', 'Basketball @ The Spot', 'Bracelet Making @ Pavillion', 'Games @ Dance Studio', 'FF @ Complex', 'Tennis @ Tennis Center', 'Soccer @ Complex', 'Games @ Vault'], ['Games @ Dance Studio', 'Soccer @ Complex', 'Activity Shuffle 2', 'FF @ Complex', 'Movie @ Nook', 'Bracelet Making @ Pavillion', 'Downball Tournament @ Garden', 'Movie @ Video Theatre', 'Rainy Day Hike @ PA', 'Activity Shuffle 1'], ['Movie @ Nook', 'Activity Shuffle 2', 'Tennis @ Tennis Center', 'Bracelet Making @ Pavillion', 'Activity Shuffle 1', 'Downball Tournament @ Garden', 'Rainy Day Hike @ PA', 'Games @ Dance Studio', 'Movie @ Video Theatre', 'FF @ Complex'], ['Rainy Day Hike @ PA', 'Games @ Vault', 'Bracelet Making @ Pavillion', 'Movie @ Nook', 'Soccer @ Complex', 'FF @ Complex', 'Movie @ Video Theatre', 'Downball Tournament @ Garden', 'Activity Shuffle 2', 'Games @ Dance Studio'], ['', '', '', 'Rainy Day Hike @ PA', 'Downball Tournament @ Garden', '', '', '', 'Bracelet Making @ Pavillion', 'Tennis @ Tennis Center'], ['FF @ Complex', 'Rainy Day Hike @ PA', 'Soccer @ Complex', 'Activity Shuffle 2', 'Tennis @ Tennis Center', 'Movie @ Nook', 'Activity Shuffle 1', 'Bracelet Making @ Pavillion', 'Games @ Dance Studio', 'Movie @ Video Theatre']]]
 
@@ -49,15 +57,10 @@ class MyFrame(ctk.CTkScrollableFrame):
         #Initialize Checkboxes
 
         self.checkboxVars = [ctk.StringVar(value="off") for _ in range(len(actnames))]
-
-        self.checkboxSpan = [ctk.StringVar(value="off") for _ in range(len(actnames))]
-
+        self.checkboxspan = [ctk.StringVar(value="off") for _ in range(len(actnames))]
         self.checkboxboy = [ctk.StringVar(value="on") for _ in range(len(actnames))]
-
         self.checkboxgirl = [ctk.StringVar(value="on") for _ in range(len(actnames))]
-
         self.checkboxsimul= [ctk.StringVar(value="off") for _ in range(len(actnames))]
-
         self.choices = [ctk.CTkCheckBox(self, text=actnames[i], variable=self.checkboxVars[i], onvalue="on", offvalue="off") for i in range(len(actnames))]
         for i in range(len(self.choices)):
             self.choices[i].grid(row=i, column=0, padx=20, pady=20, sticky="ew")
@@ -67,22 +70,26 @@ class MyFrame(ctk.CTkScrollableFrame):
         
         for i, actname in enumerate(actnames):
             self.change_activity_widgets(actname, i)
-
-        for i in range(len(self.checkboxSpan)):
-            self.checkboxSpan[i] = ctk.CTkCheckBox(self, text="Span Two Periods", variable=self.checkboxSpan[i], onvalue="on", offvalue="off")
-            self.checkboxSpan[i].grid(row=i, column=3, padx=20, pady=20, sticky="ew")
-
+        for i in range(len(self.checkboxspan)):
+            self.checkboxspan[i] = ctk.CTkCheckBox(self, text="Span Two Periods", variable=self.checkboxspan[i], onvalue="on", offvalue="off")
+            self.checkboxspan[i].grid(row=i, column=3, padx=20, pady=20, sticky="ew")
+            if "Double" in activity_categs[i]:
+                self.checkboxspan[i].select()
         for i in range(len(self.checkboxsimul)):
             self.checkboxsimul[i] = ctk.CTkCheckBox(self, text="Simultaneous", variable=self.checkboxsimul[i], onvalue="on", offvalue="off")
             self.checkboxsimul[i].grid(row=i, column=4, padx=20, pady=20, sticky="ew")
-
+            if "Simul" in activity_categs[i]:
+                self.checkboxsimul[i].select()
         for i in range(len(self.checkboxgirl)):
             self.checkboxgirl[i] = ctk.CTkCheckBox(self, text="Girl's Side", variable=self.checkboxgirl[i], onvalue="on", offvalue="off")
             self.checkboxgirl[i].grid(row=i, column=5, padx=20, pady=20, sticky="ew")
-
         for i in range(len(self.checkboxboy)):
             self.checkboxboy[i] = ctk.CTkCheckBox(self, text="Boy's Side", variable=self.checkboxboy[i], onvalue="on", offvalue="off")
             self.checkboxboy[i].grid(row=i, column=6, padx=20, pady=20, sticky="ew")
+            if "JustBoy" in activity_categs[i]:
+                self.checkboxgirl[i].deselect()
+            elif "JustGirl" in activity_categs[i]:
+                self.checkboxboy[i].deselect()
 
     def change_activity_widgets(self, placeholder_text, row):
         entry = ctk.CTkEntry(self, placeholder_text=placeholder_text)
@@ -103,8 +110,8 @@ class Memory(ctk.CTkScrollableFrame):
 
         def save_previous_schedule():
             temp=1
-            self.save_schedule_button=ctk.CTkButton(self,text="Save Schedule", corner_radius=32, fg_color="#0000FF",hover_color="#33BFFF",command=save_previous_schedule)
-            self.save_schedule_button.grid(row=0,column=0,columnspan=1,padx=10,pady=10,sticky="ew")
+            #self.save_schedule_button=ctk.CTkButton(self,text="Save Schedule", corner_radius=32, fg_color="#0000FF",hover_color="#33BFFF",command=save_previous_schedule)
+            #self.save_schedule_button.grid(row=0,column=0,columnspan=1,padx=10,pady=10,sticky="ew")
 
 
 # Create App class
@@ -117,7 +124,7 @@ class App(ctk.CTk):
 
         self.geometry(f"{appWidth}x{appHeight}")    
  
-        self.num_of_acts = 12 # Initial number of actvities!
+        self.num_of_acts_used = 12 # Initial number of actvities!
 
         self.my_frame = MyFrame(master=self, actnames=activity_names, width=1200, height=300)
         self.my_frame.grid(row=2, column=0,columnspan=12, padx=20, pady=20)
@@ -139,18 +146,17 @@ class App(ctk.CTk):
                             pady=10, sticky="ew")
 
 
-
         #Alter Number of Activities
         def alternumacts():
-            self.num_of_acts=int(self.numberactsentry.get())
+            self.num_of_acts_used=int(self.numberactsentry.get())
             if(int(self.numberactsentry.get())<12):
                 # Tell the user that this number cannot be lower than 12!
                 print("Yo, not cool dude")
             elif(int(self.numberactsentry.get())>30):
                 print("Too high!")
             else: 
-                self.num_of_acts = int(self.numberactsentry.get())
-                for i in range(self.num_of_acts):
+                self.num_of_acts_used = int(self.numberactsentry.get())
+                for i in range(self.num_of_acts_used):
                     self.my_frame.checkboxVars[i].set("on")
 
         self.numberacts = ctk.CTkLabel(self,
@@ -174,32 +180,43 @@ class App(ctk.CTk):
             for i in range(len(self.my_frame.choices)):
                 self.my_frame.checkboxVars[i].set("off")
             
+        def saveSchedule():
+            # Logging the Schedules into the Sheet
+            storing_sched = [['FF @ Complex', 'Downball Tournament @ Garden', 'Games @ Vault', 'Movie @ Video Theatre', 'Games @ Dance Studio', 'Rainy Day Hike @ PA', 'Bracelet Making @ Pavillion', 'Tennis @ Tennis Center', 'Movie @ Nook', 'Activity Shuffle 2'], ['Games @ Vault', 'Movie @ Video Theatre', 'Tennis @ Tennis Center', 'Downball Tournament @ Garden', 'Soccer @ Complex', 'Games @ Dance Studio', 'Movie @ Nook', 'Activity Shuffle 1', 'FF @ Complex', 'Rainy Day Hike @ PA'], ['Rainy Day Hike @ PA', 'Movie @ Nook', 'Games @ Dance Studio', 'Bracelet Making @ Pavillion', 'Soccer @ Complex', 'FF @ Complex', 'Tennis @ Tennis Center', 'Activity Shuffle 2', 'Movie @ Video Theatre', 'Downball Tournament @ Garden'], ['Activity Shuffle 1', 'Tennis @ Tennis Center', 'Movie @ Nook', 'Games @ Dance Studio', 'Bracelet Making @ Pavillion', 'Activity Shuffle 2', 'Games @ Vault', 'Movie @ Video Theatre', 'Rainy Day Hike @ PA', 'FF @ Complex'], ['Games @ Dance Studio', 'Games @ Vault', 'Activity Shuffle 2', 'Activity Shuffle 1', 'Rainy Day Hike @ PA', 'Movie @ Nook', 'Movie @ Video Theatre', 'Downball Tournament @ Garden', 'Bracelet Making @ Pavillion', 'Tennis @ Tennis Center'], ['', '', '', 'Games @ Vault', 'FF @ Complex', '', '', '', 'Tennis @ Tennis Center', 'Movie @ Video Theatre'], ['Tennis @ Tennis Center', 'Games @ Dance Studio', 'FF @ Complex', 'Movie @ Nook', 'Downball Tournament @ Garden', 'Bracelet Making @ Pavillion', 'Activity Shuffle 2', 'Rainy Day Hike @ PA', 'Games @ Vault', 'Activity Shuffle 1']]
+            letter = get_column_letter(data_sheet["B1"].value+2)
+            data_sheet[f"{letter}2"].value = len(storing_sched)
+            for i in range(len(storing_sched)):
+                data_sheet[f"{letter}{i+3}"].value = "/".join(storing_sched[i])
+            data_sheet["B1"].value += 1
+            data_book.save(save_file_name)
+
         def run(): #button press
-
-            opts = [True if self.my_frame.checkboxVars[i].get() == "on" else False for i in range(self.num_of_acts)]
-            actnames=[self.my_frame.choices[i].cget("text") for i in range(len(self.my_frame.choices))]
-
-            # Making sure to save all of the activities:
-            data_sheet.delete_cols(1,1)
-            data_sheet["A1"].value = self.num_of_acts
-            for i in range(2, self.num_of_acts + 2):
-                data_sheet[f"A{i}"].value = actnames[i]
-            data_book.save("past_activity_data.xlsx")
-
+            total_acts = len(self.my_frame.choices)
+            opts = [True if self.my_frame.checkboxVars[i].get() == "on" else False for i in range(total_acts)]
+            actnames=[self.my_frame.choices[i].cget("text") for i in range(total_acts)]
+            self.num_of_acts_used = sum(opts)
 
             act_dict = []
             #Sort out the categories
-            categs = ["All" if self.my_frame.checkboxboy[i].get() == self.my_frame.checkboxgirl[i].get() else "JustBoy" if self.my_frame.checkboxboy[i].get() == "on" else "JustGirl" for i in range(self.num_of_acts)]
-            
-            categs = [categs[i]+"Simul" if self.my_frame.checkboxsimul[i].get() == "on" else categs[i] for i in range(self.num_of_acts)]
-
-            categs = [categs[i]+"Double" if self.my_frame.checkboxSpan[i].get() == "on" else categs[i] for i in range(self.num_of_acts)]
-
+            categs = ["All" if self.my_frame.checkboxboy[i].get() == self.my_frame.checkboxgirl[i].get() else "JustBoy" if self.my_frame.checkboxboy[i].get() == "on" else "JustGirl" for i in range(total_acts)]
+            categs = [categs[i]+"Simul" if self.my_frame.checkboxsimul[i].get() == "on" else categs[i] for i in range(total_acts)]
+            categs = [categs[i]+"Double" if self.my_frame.checkboxspan[i].get() == "on" else categs[i] for i in range(total_acts)]
             time_period = "morning" if self.checkboxmorning.get() == "on" else "afternoon" if self.checkboxafternoon.get() == "on" else "wholeday"
 
-            for i in range(len(opts)):
+            # Emptying the data sheet for new previous schedule
+            length = data_sheet[f"A1"].value
+            for i in range(length):
+                data_sheet[f"A{i+2}"].value = None
+            data_sheet["A1"].value = self.num_of_acts_used
+            # Creating our act_dict for the generator and storing those activities!
+            data_row = 2
+            for i in range(total_acts):
                     if opts[i]:
                         act_dict.append({"name": actnames[i], "type": categs[i]})
+                        data_sheet[f"A{data_row}"].value = actnames[i] + "/" + categs[i]
+                        data_row += 1
+            data_book.save(save_file_name)
+
             global specs
 
             if time_period == "morning":
@@ -344,7 +361,6 @@ class App(ctk.CTk):
 
             schedy = getSchedule(b_groups=5, g_groups=5, activities=act_dict, sheet_specs=specs)
             print(schedy)
-            
 
         # Functions to maintain one enabled timeframe checkbox
         def reset_checkboxes_morn():
@@ -400,7 +416,7 @@ class App(ctk.CTk):
         self.testButton=ctk.CTkButton(self,text="Deselect All Activities", text_color="#000000", corner_radius=32, fg_color="#FFFFFF",hover_color="#FFFFFF",command=deselectall)
         self.testButton.grid(row=1,column=4,columnspan=3,padx=10,pady=10,sticky="ew")
 
-        self.saveButton=ctk.CTkButton(self,text="Save Previous", text_color="#000000", corner_radius=32, fg_color="#77DD77",hover_color="#B9FEB9",command=deselectall)
+        self.saveButton=ctk.CTkButton(self,text="Save Previous", text_color="#000000", corner_radius=32, fg_color="#77DD77",hover_color="#B9FEB9",command=saveSchedule)
         self.saveButton.grid(row=1,column=3,columnspan=1,padx=5,pady=5,sticky="ew")
 
         self.eraseButton=ctk.CTkButton(self,text="Erase Memory", text_color="#000000", corner_radius=32, fg_color="#FF6961",hover_color="#f69697",command=deselectall)
