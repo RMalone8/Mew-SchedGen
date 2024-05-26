@@ -27,14 +27,19 @@ activity_names = []
 activity_categs = []
 previous_schedules = []
 
+# Loading our saved data... if we have any
 if os.path.exists(save_file_name):
     data_book = pyxl.open(save_file_name)
     data_sheet = data_book.active
-    for i in range(2, 2+data_sheet["A1"].value):
-        activity_names.append(data_sheet[f"A{i}"].value.split("/")[0])
-        activity_categs.append(data_sheet[f"A{i}"].value.split("/")[1])
-    for i in range(2, 2+data_sheet["B1"].value):
-        previous_schedules.append(data_sheet[f"B{i}"].value)
+    for i in range(data_sheet["A1"].value):
+        activity_names.append(data_sheet[f"A{i+2}"].value.split("/")[0])
+        activity_categs.append(data_sheet[f"A{i+2}"].value.split("/")[1])
+    for i in range(data_sheet["B1"].value):
+        letter = get_column_letter(i+2)
+        previous_sched = []
+        for j in range(data_sheet[f"{letter}2"].value):
+            previous_sched.append(data_sheet[f"{letter}{j+3}"].value.split("/"))
+        previous_schedules.append(previous_sched)
 else:
     data_book = Workbook()
     data_sheet = data_book.active
@@ -48,14 +53,10 @@ extra_categs = ["NA" for _ in range(30 - len(activity_names))]
 activity_names += extra_act
 activity_categs += extra_categs
 
-previous_schedules = [[['FF @ Complex', 'Downball Tournament @ Garden', 'Games @ Vault', 'Movie @ Video Theatre', 'Games @ Dance Studio', 'Rainy Day Hike @ PA', 'Bracelet Making @ Pavillion', 'Tennis @ Tennis Center', 'Movie @ Nook', 'Activity Shuffle 2'], ['Games @ Vault', 'Movie @ Video Theatre', 'Tennis @ Tennis Center', 'Downball Tournament @ Garden', 'Soccer @ Complex', 'Games @ Dance Studio', 'Movie @ Nook', 'Activity Shuffle 1', 'FF @ Complex', 'Rainy Day Hike @ PA'], ['Rainy Day Hike @ PA', 'Movie @ Nook', 'Games @ Dance Studio', 'Bracelet Making @ Pavillion', 'Soccer @ Complex', 'FF @ Complex', 'Tennis @ Tennis Center', 'Activity Shuffle 2', 'Movie @ Video Theatre', 'Downball Tournament @ Garden'], ['Activity Shuffle 1', 'Tennis @ Tennis Center', 'Movie @ Nook', 'Games @ Dance Studio', 'Bracelet Making @ Pavillion', 'Activity Shuffle 2', 'Games @ Vault', 'Movie @ Video Theatre', 'Rainy Day Hike @ PA', 'FF @ Complex'], ['Games @ Dance Studio', 'Games @ Vault', 'Activity Shuffle 2', 'Activity Shuffle 1', 'Rainy Day Hike @ PA', 'Movie @ Nook', 'Movie @ Video Theatre', 'Downball Tournament @ Garden', 'Bracelet Making @ Pavillion', 'Tennis @ Tennis Center'], ['', '', '', 'Games @ Vault', 'FF @ Complex', '', '', '', 'Tennis @ Tennis Center', 'Movie @ Video Theatre'], ['Tennis @ Tennis Center', 'Games @ Dance Studio', 'FF @ Complex', 'Movie @ Nook', 'Downball Tournament @ Garden', 'Bracelet Making @ Pavillion', 'Activity Shuffle 2', 'Rainy Day Hike @ PA', 'Games @ Vault', 'Activity Shuffle 1']],
-                      [['Downball Tournament @ Garden', 'Activity Shuffle 1', 'Movie @ Video Theatre', 'Basketball @ The Spot', 'Games @ Vault', 'Activity Shuffle 2', 'Games @ Dance Studio', 'Movie @ Nook', 'FF @ Complex', 'Bracelet Making @ Pavillion'], ['Movie @ Video Theatre', 'Movie @ Nook', 'Activity Shuffle 1', 'Basketball @ The Spot', 'Bracelet Making @ Pavillion', 'Games @ Dance Studio', 'FF @ Complex', 'Tennis @ Tennis Center', 'Soccer @ Complex', 'Games @ Vault'], ['Games @ Dance Studio', 'Soccer @ Complex', 'Activity Shuffle 2', 'FF @ Complex', 'Movie @ Nook', 'Bracelet Making @ Pavillion', 'Downball Tournament @ Garden', 'Movie @ Video Theatre', 'Rainy Day Hike @ PA', 'Activity Shuffle 1'], ['Movie @ Nook', 'Activity Shuffle 2', 'Tennis @ Tennis Center', 'Bracelet Making @ Pavillion', 'Activity Shuffle 1', 'Downball Tournament @ Garden', 'Rainy Day Hike @ PA', 'Games @ Dance Studio', 'Movie @ Video Theatre', 'FF @ Complex'], ['Rainy Day Hike @ PA', 'Games @ Vault', 'Bracelet Making @ Pavillion', 'Movie @ Nook', 'Soccer @ Complex', 'FF @ Complex', 'Movie @ Video Theatre', 'Downball Tournament @ Garden', 'Activity Shuffle 2', 'Games @ Dance Studio'], ['', '', '', 'Rainy Day Hike @ PA', 'Downball Tournament @ Garden', '', '', '', 'Bracelet Making @ Pavillion', 'Tennis @ Tennis Center'], ['FF @ Complex', 'Rainy Day Hike @ PA', 'Soccer @ Complex', 'Activity Shuffle 2', 'Tennis @ Tennis Center', 'Movie @ Nook', 'Activity Shuffle 1', 'Bracelet Making @ Pavillion', 'Games @ Dance Studio', 'Movie @ Video Theatre']]]
-
 class MyFrame(ctk.CTkScrollableFrame):
     def __init__(self, master, actnames: list, **kwargs):
         super().__init__(master, **kwargs)
         #Initialize Checkboxes
-
         self.checkboxVars = [ctk.StringVar(value="off") for _ in range(len(actnames))]
         self.checkboxspan = [ctk.StringVar(value="off") for _ in range(len(actnames))]
         self.checkboxboy = [ctk.StringVar(value="on") for _ in range(len(actnames))]
@@ -110,8 +111,8 @@ class Memory(ctk.CTkScrollableFrame):
 
         def save_previous_schedule():
             temp=1
-            #self.save_schedule_button=ctk.CTkButton(self,text="Save Schedule", corner_radius=32, fg_color="#0000FF",hover_color="#33BFFF",command=save_previous_schedule)
-            #self.save_schedule_button.grid(row=0,column=0,columnspan=1,padx=10,pady=10,sticky="ew")
+            self.save_schedule_button=ctk.CTkButton(self,text="Save Schedule", corner_radius=32, fg_color="#0000FF",hover_color="#33BFFF",command=save_previous_schedule)
+            self.save_schedule_button.grid(row=0,column=0,columnspan=1,padx=10,pady=10,sticky="ew")
 
 
 # Create App class
@@ -125,6 +126,7 @@ class App(ctk.CTk):
         self.geometry(f"{appWidth}x{appHeight}")    
  
         self.num_of_acts_used = 12 # Initial number of actvities!
+        self.just_generated_schedule = []
 
         self.my_frame = MyFrame(master=self, actnames=activity_names, width=1200, height=300)
         self.my_frame.grid(row=2, column=0,columnspan=12, padx=20, pady=20)
@@ -182,13 +184,14 @@ class App(ctk.CTk):
             
         def saveSchedule():
             # Logging the Schedules into the Sheet
-            storing_sched = [['FF @ Complex', 'Downball Tournament @ Garden', 'Games @ Vault', 'Movie @ Video Theatre', 'Games @ Dance Studio', 'Rainy Day Hike @ PA', 'Bracelet Making @ Pavillion', 'Tennis @ Tennis Center', 'Movie @ Nook', 'Activity Shuffle 2'], ['Games @ Vault', 'Movie @ Video Theatre', 'Tennis @ Tennis Center', 'Downball Tournament @ Garden', 'Soccer @ Complex', 'Games @ Dance Studio', 'Movie @ Nook', 'Activity Shuffle 1', 'FF @ Complex', 'Rainy Day Hike @ PA'], ['Rainy Day Hike @ PA', 'Movie @ Nook', 'Games @ Dance Studio', 'Bracelet Making @ Pavillion', 'Soccer @ Complex', 'FF @ Complex', 'Tennis @ Tennis Center', 'Activity Shuffle 2', 'Movie @ Video Theatre', 'Downball Tournament @ Garden'], ['Activity Shuffle 1', 'Tennis @ Tennis Center', 'Movie @ Nook', 'Games @ Dance Studio', 'Bracelet Making @ Pavillion', 'Activity Shuffle 2', 'Games @ Vault', 'Movie @ Video Theatre', 'Rainy Day Hike @ PA', 'FF @ Complex'], ['Games @ Dance Studio', 'Games @ Vault', 'Activity Shuffle 2', 'Activity Shuffle 1', 'Rainy Day Hike @ PA', 'Movie @ Nook', 'Movie @ Video Theatre', 'Downball Tournament @ Garden', 'Bracelet Making @ Pavillion', 'Tennis @ Tennis Center'], ['', '', '', 'Games @ Vault', 'FF @ Complex', '', '', '', 'Tennis @ Tennis Center', 'Movie @ Video Theatre'], ['Tennis @ Tennis Center', 'Games @ Dance Studio', 'FF @ Complex', 'Movie @ Nook', 'Downball Tournament @ Garden', 'Bracelet Making @ Pavillion', 'Activity Shuffle 2', 'Rainy Day Hike @ PA', 'Games @ Vault', 'Activity Shuffle 1']]
-            letter = get_column_letter(data_sheet["B1"].value+2)
-            data_sheet[f"{letter}2"].value = len(storing_sched)
-            for i in range(len(storing_sched)):
-                data_sheet[f"{letter}{i+3}"].value = "/".join(storing_sched[i])
-            data_sheet["B1"].value += 1
-            data_book.save(save_file_name)
+            if self.just_generated_schedule:
+                letter = get_column_letter(data_sheet["B1"].value+2)
+                data_sheet[f"{letter}2"].value = len(self.just_generated_schedule)
+                for i in range(len(self.just_generated_schedule)):
+                    data_sheet[f"{letter}{i+3}"].value = "/".join(self.just_generated_schedule[i])
+                data_sheet["B1"].value += 1
+                data_book.save(save_file_name)
+                previous_schedules.append(self.just_generated_schedule)
 
         def run(): #button press
             total_acts = len(self.my_frame.choices)
@@ -344,7 +347,6 @@ class App(ctk.CTk):
                 same_acts = 0
                 same_times = 0
                 total_score = 0
-
                 proposed = np.array(proposed_sched).transpose()
 
                 for previous in previous_scheds:
@@ -354,14 +356,11 @@ class App(ctk.CTk):
                         same_times = sum([2 for new_act, old_act in zip(new_row, old_row) if new_act == old_act])
                         same_acts = sum([1 for old_act in old_row if old_act in new_row])
                     total_score = same_times + same_acts if same_acts + same_times > total_score else total_score
-
-
                 return total_score
 
-
-            schedy = getSchedule(b_groups=5, g_groups=5, activities=act_dict, sheet_specs=specs)
-            print(schedy)
-
+            self.just_generated_schedule = getSchedule(b_groups=5, g_groups=5, activities=act_dict, sheet_specs=specs)
+            print(self.just_generated_schedule)
+            
         # Functions to maintain one enabled timeframe checkbox
         def reset_checkboxes_morn():
             if self.checkboxmorning.get() == "on":
@@ -375,7 +374,6 @@ class App(ctk.CTk):
             if self.checkboxwholeday.get() == "on":
                 self.checkboxafternoon.set("off")
                 self.checkboxmorning.set("off")
-
 
         # Creating the checkboxes
         self.checkboxmorning=ctk.StringVar(value="off")
@@ -410,7 +408,6 @@ class App(ctk.CTk):
         self.choicewholeday.grid(row=7, column=6,
                           padx=5, pady=5,
                           sticky="ew")
-
 
         #Make Spreadsheet Button
         self.testButton=ctk.CTkButton(self,text="Deselect All Activities", text_color="#000000", corner_radius=32, fg_color="#FFFFFF",hover_color="#FFFFFF",command=deselectall)
