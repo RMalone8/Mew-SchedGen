@@ -68,7 +68,7 @@ class MyFrame(ctk.CTkScrollableFrame):
 
         self.activity_entries = []
         self.activity_buttons = []
-        
+
         for i, actname in enumerate(actnames):
             self.change_activity_widgets(actname, i)
         for i in range(len(self.checkboxspan)):
@@ -193,6 +193,15 @@ class App(ctk.CTk):
                 data_book.save(save_file_name)
                 previous_schedules.append(self.just_generated_schedule)
 
+        def eraseSchedules():
+            for i in range(data_sheet["B1"].value):
+                letter = get_column_letter(i+2)
+                for j in range(data_sheet[f"{letter}2"].value):
+                    data_sheet[f"{letter}{j+3}"].value = None
+                data_sheet[f"{letter}2"].value = None
+            data_sheet["B1"].value = 0
+            data_book.save(save_file_name)
+
         def run(): #button press
             total_acts = len(self.my_frame.choices)
             opts = [True if self.my_frame.checkboxVars[i].get() == "on" else False for i in range(total_acts)]
@@ -245,7 +254,7 @@ class App(ctk.CTk):
                 # Sending Produced Schedule to Downloads
                 output_path=Path.home()/'Downloads'/f'Generated_Schedule_{datetime.now().month}_{datetime.now().day}_{datetime.now().year}.xlsx'
                 shutil.copyfile('new_sheet.xlsx',output_path)
-                print(f"Here is how similar it is to previous schedules (140 meaning identical): {compareAgainstPrevious(proposed_sched=result, previous_scheds=previous_schedules)}")
+                print(f"Here is how similar it is to previous schedules (210 meaning identical): {compareAgainstPrevious(proposed_sched=result, previous_scheds=previous_schedules)}")
                 return result
 
             def generateSchedule(b_groups: int, g_groups: int, activities: list, sheet_specs: dict):
@@ -416,7 +425,7 @@ class App(ctk.CTk):
         self.saveButton=ctk.CTkButton(self,text="Save Previous", text_color="#000000", corner_radius=32, fg_color="#77DD77",hover_color="#B9FEB9",command=saveSchedule)
         self.saveButton.grid(row=1,column=3,columnspan=1,padx=5,pady=5,sticky="ew")
 
-        self.eraseButton=ctk.CTkButton(self,text="Erase Memory", text_color="#000000", corner_radius=32, fg_color="#FF6961",hover_color="#f69697",command=deselectall)
+        self.eraseButton=ctk.CTkButton(self,text="Erase Memory", text_color="#000000", corner_radius=32, fg_color="#FF6961",hover_color="#f69697",command=eraseSchedules)
         self.eraseButton.grid(row=1,column=7,columnspan=1,padx=5,pady=5,sticky="ew")
 
         self.testButton=ctk.CTkButton(self,text="Select Duration of Schedule", text_color="#000000", corner_radius=32, fg_color="#FFFFFF",hover_color="#FFFFFF",command=testrun)
