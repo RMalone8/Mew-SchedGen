@@ -47,7 +47,6 @@ else:
     data_sheet["B1"].value = 0
     data_book.save(save_file_name)
 
-errormessage="Click Blue Button to Generate Schedule"
 extra_act = ["NA" for _ in range(30 - len(activity_names))]
 extra_categs = ["NA" for _ in range(30 - len(activity_names))]
 activity_names += extra_act
@@ -62,15 +61,17 @@ class MyFrame(ctk.CTkScrollableFrame):
         self.checkboxboy = [ctk.StringVar(value="on") for _ in range(len(actnames))]
         self.checkboxgirl = [ctk.StringVar(value="on") for _ in range(len(actnames))]
         self.checkboxsimul= [ctk.StringVar(value="off") for _ in range(len(actnames))]
-        self.choices = [ctk.CTkCheckBox(self, text=actnames[i], variable=self.checkboxVars[i], onvalue="on", offvalue="off") for i in range(len(actnames))]
+        self.choices = [ctk.CTkCheckBox(self, text="", variable=self.checkboxVars[i], onvalue="on", offvalue="off") for i in range(len(actnames))]
         for i in range(len(self.choices)):
-            self.choices[i].grid(row=i, column=0, padx=20, pady=20, sticky="ew")
+            self.choices[i].grid(row=i, column=0, padx=0, pady=20, sticky="ew")
 
         self.activity_entries = []
         self.activity_buttons = []
 
-        for i, actname in enumerate(actnames):
-            self.change_activity_widgets(actname, i)
+        self.entry = [ctk.CTkEntry(self, placeholder_text=actnames[i], placeholder_text_color=("white", "white")) for i in range(len(actnames))]
+        for i in range(len(self.entry)):
+            self.entry[i].grid(row=i, column=1, columnspan=1, padx=5, pady=10, sticky="ew")
+
         for i in range(len(self.checkboxspan)):
             self.checkboxspan[i] = ctk.CTkCheckBox(self, text="Span Two Periods", variable=self.checkboxspan[i], onvalue="on", offvalue="off")
             self.checkboxspan[i].grid(row=i, column=3, padx=20, pady=20, sticky="ew")
@@ -91,19 +92,6 @@ class MyFrame(ctk.CTkScrollableFrame):
                 self.checkboxgirl[i].deselect()
             elif "JustGirl" in activity_categs[i]:
                 self.checkboxboy[i].deselect()
-
-    def change_activity_widgets(self, placeholder_text, row):
-        entry = ctk.CTkEntry(self, placeholder_text=placeholder_text)
-        entry.grid(row=row, column=1, columnspan=1, padx=10, pady=10, sticky="ew")
-
-        def change_activity():
-            self.choices[row].configure(text=entry.get())
-        
-        button = ctk.CTkButton(self, text="Change", text_color="#000000", corner_radius=32, fg_color="#FFFFFF", hover_color="#0047AB", command=change_activity)
-        button.grid(row=row, column=2, columnspan=1, padx=10, pady=10, sticky="ew")
-        
-        self.activity_entries.append(entry)
-        self.activity_buttons.append(button)
 
 class Memory(ctk.CTkScrollableFrame):
     def __init__(self, master: list, **kwargs):
@@ -131,9 +119,7 @@ class App(ctk.CTk):
         self.my_frame = MyFrame(master=self, actnames=activity_names, width=1200, height=300)
         self.my_frame.grid(row=2, column=0,columnspan=12, padx=20, pady=20)
 
-        #self.memory=Memory(master=self, width=200, height=200)
-        #self.memory.grid(row=7, column=8, columnspan=12, padx=20, pady=20)
-
+        self.error_message = "Click to Generate a Schedule"
 
         # Schedule Name/Title
         self.nameLabel = ctk.CTkLabel(self,
@@ -175,8 +161,7 @@ class App(ctk.CTk):
         self.numberactsbutton.grid(row=0,column=7,columnspan=1,padx=15,pady=10,sticky="ew")        
          
         def testrun():
-            self.nameLabel = ctk.CTkLabel(self,text="An Error Has Occured")
-            self.nameLabel.grid(row=14, column=0,padx=10, pady=10,sticky="ew")
+            self.messageDisplayButton.configure(text=self.error_message)
         
         def deselectall():
             for i in range(len(self.my_frame.choices)):
@@ -192,6 +177,8 @@ class App(ctk.CTk):
                 data_sheet["B1"].value += 1
                 data_book.save(save_file_name)
                 previous_schedules.append(self.just_generated_schedule)
+                self.error_message = "Schedule Saved!"
+                self.messageDisplayButton.configure(text=self.error_message, text_color="#77DD77")
 
         def eraseSchedules():
             for i in range(data_sheet["B1"].value):
@@ -201,13 +188,14 @@ class App(ctk.CTk):
                 data_sheet[f"{letter}2"].value = None
             data_sheet["B1"].value = 0
             data_book.save(save_file_name)
+            self.error_message = "Successully Deleted Previous Schedule Memory"
+            self.messageDisplayButton.configure(text=self.error_message, text_color="#77DD77")
 
         def run(): #button press
             total_acts = len(self.my_frame.choices)
             opts = [True if self.my_frame.checkboxVars[i].get() == "on" else False for i in range(total_acts)]
-            actnames=[self.my_frame.choices[i].cget("text") for i in range(total_acts)]
+            actnames=[self.my_frame.entry[i].get() if self.my_frame.entry[i].get() else self.my_frame.entry[i].cget("placeholder_text") for i in range(total_acts)]
             self.num_of_acts_used = sum(opts)
-
             act_dict = []
             #Sort out the categories
             categs = ["All" if self.my_frame.checkboxboy[i].get() == self.my_frame.checkboxgirl[i].get() else "JustBoy" if self.my_frame.checkboxboy[i].get() == "on" else "JustGirl" for i in range(total_acts)]
@@ -250,11 +238,17 @@ class App(ctk.CTk):
                 while not result and count < 100:
                     result = generateSchedule(b_groups= b_groups, g_groups= g_groups, activities= activities, sheet_specs=sheet_specs)
                     count +=1
-
-                # Sending Produced Schedule to Downloads
-                output_path=Path.home()/'Downloads'/f'Generated_Schedule_{datetime.now().month}_{datetime.now().day}_{datetime.now().year}.xlsx'
-                shutil.copyfile('new_sheet.xlsx',output_path)
-                print(f"Here is how similar it is to previous schedules (210 meaning identical): {compareAgainstPrevious(proposed_sched=result, previous_scheds=previous_schedules)}")
+                if count < 100 and result:
+                    # Sending Produced Schedule to Downloads
+                    output_path=Path.home()/'Downloads'/f'Generated_Schedule_{datetime.now().month}_{datetime.now().day}_{datetime.now().year}.xlsx'
+                    shutil.copyfile('new_sheet.xlsx',output_path)
+                    print(f"Here is how similar it is to previous schedules (210 meaning identical): {compareAgainstPrevious(proposed_sched=result, previous_scheds=previous_schedules)}")
+                if result:
+                    self.error_message = "Schedule Generated!"
+                    self.messageDisplayButton.configure(text=self.error_message, text_color="#77DD77")
+                else:
+                    self.error_message = "Failure to Generate Schedule"
+                    self.messageDisplayButton.configure(text=self.error_message, text_color="#FF6961")
                 return result
 
             def generateSchedule(b_groups: int, g_groups: int, activities: list, sheet_specs: dict):
@@ -269,9 +263,9 @@ class App(ctk.CTk):
 
                 # Checking if a valid schedule can even be made!
                 if groups != len(sheet_specs["rows"]):
-                    return "Invalid number of rows for number of chosen groups."
+                    return False#"Invalid number of rows for number of chosen groups."
                 if groups > len(activities) or periods > len(activities):
-                    return "Not enough groups or periods to fulfill the activities selected."
+                    return False#"Not enough groups or periods to fulfill the activities selected."
                 
                 global schedule
                 schedule = [["" for group in range(groups)] for period in range(periods)]
@@ -428,14 +422,14 @@ class App(ctk.CTk):
         self.eraseButton=ctk.CTkButton(self,text="Erase Memory", text_color="#000000", corner_radius=32, fg_color="#FF6961",hover_color="#f69697",command=eraseSchedules)
         self.eraseButton.grid(row=1,column=7,columnspan=1,padx=5,pady=5,sticky="ew")
 
-        self.testButton=ctk.CTkButton(self,text="Select Duration of Schedule", text_color="#000000", corner_radius=32, fg_color="#FFFFFF",hover_color="#FFFFFF",command=testrun)
+        self.testButton=ctk.CTkButton(self,text="Click the Blue Button to Generate a Schedule", text_color="#000000", corner_radius=32, fg_color="#FFFFFF",hover_color="#FFFFFF",command=testrun)
         self.testButton.grid(row=6,column=4,columnspan=3,padx=10,pady=10,sticky="ew")
 
         self.generateResultsButton=ctk.CTkButton(self,text="Generate Schedule", corner_radius=32, fg_color="#0000FF",hover_color="#33BFFF",command=run)
         self.generateResultsButton.grid(row=8,column=4,columnspan=3,padx=10,pady=10,sticky="ew")
 
-        self.testButton=ctk.CTkButton(self,text=errormessage, text_color="#000000", corner_radius=32, fg_color="#FFFFFF",hover_color="#FFFFFF",command=testrun)
-        self.testButton.grid(row=9,column=4,columnspan=3,padx=10,pady=10,sticky="ew")
+        self.messageDisplayButton=ctk.CTkButton(self,text=" ", text_color="#000000", corner_radius=32, fg_color="#FFFFFF",hover_color="#FFFFFF",command=testrun)
+        self.messageDisplayButton.grid(row=9,column=4,columnspan=3,padx=10,pady=10,sticky="ew")
       
         #my_image=ctk.CTkImage(Image.open('images/CampIHCLogo2.png'),size=(150,150))
         #my_image_label=ctk.CTkLabel(self, image=my_image, width=200, height=200)
